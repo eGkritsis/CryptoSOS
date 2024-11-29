@@ -74,44 +74,49 @@ contract CryptoSOS {
     }
 
     function cancel() external {
-        require(block.timestamp >= gameStartTime + 2 minutes, "Cannot cancel yet");
-        require(msg.sender == player1 && player2 == address(0), "Cannot cancel");
-        payable(player1).transfer(entryFee);
-        resetGame();
-    }
+    require(!gameActive, "Game has already started");
+    require(msg.sender == player1, "Only the first player can cancel");
+    require(block.timestamp >= lastMoveTime + 2 minutes, "Cancellation period not yet reached");
+
+    // Refund the first player's payment
+    payable(player1).transfer(1 ether);
+
+    // Reset the game state
+    resetGame();
+}
+
 
     function tooslow() external {
-    require(gameActive, "No active game");
-    
-    // Check if called by a player or the owner
-    if (msg.sender == owner) {
-        // Owner can terminate after 5 minutes of inactivity
-        require(block.timestamp >= lastMoveTime + 5 minutes, "Game timeout not reached for owner");
-        
-        // Consider this a tie
-        _endGame(address(0), 0 ether, 0 ether); // No winner; prizes handled inside _endGame
-        emit Tie(player1, player2);
-    } else {
-        // Ensure only players can call during regular game activity
-        require(msg.sender == player1 || msg.sender == player2, "Only players can call this");
-        require(block.timestamp >= lastMoveTime + 1 minutes, "Move timeout not reached");
+        require(gameActive, "No active game");
 
-        // Determine the winner based on the turn
-        address winner = (turn == 1) ? player2 : player1; // Opponent wins due to timeout
-        _endGame(winner, 1.5 ether, 0.5 ether);
-        emit Winner(winner);
+        if (msg.sender == owner) {
+            // Owner's action: terminate the game after 5 minutes of inactivity
+            require(block.timestamp >= lastMoveTime + 5 minutes, "Game timeout not reached for owner");
+
+            // Treat this as a tie
+            _endGame(address(0), 0 ether, 0 ether); // No winner; prizes handled in _endGame
+            emit Tie(player1, player2);
+        } else {
+            // Player's action: declare the opponent too slow after 1 minute of delay
+            require(msg.sender == player1 || msg.sender == player2, "Only players can call this");
+            require(block.timestamp >= lastMoveTime + 1 minutes, "Move timeout not reached");
+
+            // Determine the winner based on the current turn
+            address winner = (turn == 1) ? player2 : player1;
+            _endGame(winner, 1.5 ether, 0.5 ether); // Distribute winnings
+            emit Winner(winner);
+        }
     }
-}
 
     function sweepProfit(uint amountInWei) external onlyOwner {
-    // Ensure the requested amount is valid
-    require(amountInWei > 0, "Amount must be greater than zero");
-    require(address(this).balance >= amountInWei, "Insufficient contract balance");
+        // Ensure the requested amount is valid
+        require(amountInWei > 0, "Amount must be greater than zero");
+        require(address(this).balance >= amountInWei, "Insufficient contract balance");
 
-    // Attempt to send the requested amount to the owner
-    (bool success, ) = payable(owner).call{value: amountInWei}("");
-    require(success, "Transfer to owner failed");
-}
+        // Attempt to send the requested amount to the owner
+        (bool success, ) = payable(owner).call{value: amountInWei}("");
+        require(success, "Transfer to owner failed");
+    }
 
 
     // Private functions
@@ -139,32 +144,31 @@ contract CryptoSOS {
     }
 
     function _checkWin() private view returns (bool) {
-    bytes memory b = bytes(board);
-    uint8[3][8] memory lines = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-        [0, 4, 8], [2, 4, 6]             // Diagonals
-    ];
+        bytes memory b = bytes(board);
+        uint8[3][8] memory lines = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
 
-    for (uint8 i = 0; i < 8; i++) {
-        uint8[3] memory line = lines[i];
-        if (b[line[0]] == "S" && b[line[1]] == "O" && b[line[2]] == "S") {
-            return true;
+        for (uint8 i = 0; i < 8; i++) {
+            uint8[3] memory line = lines[i];
+            if (b[line[0]] == "S" && b[line[1]] == "O" && b[line[2]] == "S") {
+                return true;
+            }
         }
+        return false;
     }
-    return false;
-}
-
 
     function _hasEmptySquares() private view returns (bool) {
-    bytes memory b = bytes(board);
-    for (uint8 i = 0; i < b.length; i++) {
-        if (b[i] == "-") {
-            return true; // Found an empty square
+        bytes memory b = bytes(board);
+        for (uint8 i = 0; i < b.length; i++) {
+            if (b[i] == "-") {
+                return true; // Found an empty square
+            }
         }
+        return false; // No empty squares
     }
-    return false; // No empty squares
-}
 
 
     function _endGame(address winner, uint winnerPrize, uint /*contractShare*/) private {

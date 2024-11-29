@@ -234,7 +234,7 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "amount",
+						"name": "amountInWei",
 						"type": "uint256"
 					}
 				],
@@ -277,7 +277,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"contracts/sos.sol": "CryptoSOS"
+			"contracts/cryptoSOS.sol": "CryptoSOS"
 		},
 		"evmVersion": "cancun",
 		"libraries": {},
@@ -291,12 +291,12 @@
 		"remappings": []
 	},
 	"sources": {
-		"contracts/sos.sol": {
-			"keccak256": "0x2c6105c3f35861fa663826a4e21418a22394f8dd3ae987c85645f299808e8829",
+		"contracts/cryptoSOS.sol": {
+			"keccak256": "0x168d37696f7705ec603ca5d46e64dc23e1b56094613cc571319057b9cb7dbbf0",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://d4aa44d674124969b74d7926beaa94c10d74e8447c24b828eac59e93d8ccb27c",
-				"dweb:/ipfs/QmVNpuABGdJmRfefgNHhJm9X9SRb5SDYgo42iAYgVL3XUW"
+				"bzz-raw://55a15b7478fb1ce0fc386616a915513048b35fd3b37b0a56eddede55161f1fb9",
+				"dweb:/ipfs/QmbcgJY4i7rQkSjyuq3Ay25uhYooizfyYZJTitjJjNW9FN"
 			]
 		}
 	},
