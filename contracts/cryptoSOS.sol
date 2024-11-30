@@ -86,7 +86,6 @@ contract CryptoSOS {
         payable(player1).transfer(1 ether);
     }
 
-
     function tooslow() external {
         require(gameActive, "No active game");
 
@@ -112,12 +111,20 @@ contract CryptoSOS {
     function sweepProfit(uint amountInWei) external onlyOwner {
         // Ensure the requested amount is valid
         require(amountInWei > 0, "Amount must be greater than zero");
-        require(address(this).balance >= amountInWei, "Insufficient contract balance");
+
+        // Calculate the minimum reserve required
+        uint minReserve = 0;
+        if (gameActive) {
+            // If the game is active, reserve the highest possible payout
+            minReserve = 1.9 ether; // Maximum needed for a tie
+        }
+
+        // Ensure there is enough balance left after withdrawal
+        require(address(this).balance >= amountInWei + minReserve, "Insufficient balance for prizes");
 
         // Attempt to send the requested amount to the owner using transfer (safe for EOAs)
         payable(owner).transfer(amountInWei);
     }
-
 
     // Private functions
     function _makeMove(uint8 square, string memory symbol) private {
