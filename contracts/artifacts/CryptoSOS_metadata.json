@@ -292,11 +292,11 @@
 	},
 	"sources": {
 		"contracts/cryptoSOS.sol": {
-			"keccak256": "0x168d37696f7705ec603ca5d46e64dc23e1b56094613cc571319057b9cb7dbbf0",
+			"keccak256": "0xb5a14fee424db3ca9adf773eab59493bfd996fb8dc6e0e38cac8281276c840c7",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://55a15b7478fb1ce0fc386616a915513048b35fd3b37b0a56eddede55161f1fb9",
-				"dweb:/ipfs/QmbcgJY4i7rQkSjyuq3Ay25uhYooizfyYZJTitjJjNW9FN"
+				"bzz-raw://6d06f83998674e4d4f59597f7334a8e5df0c1bfb5f947400d2e27e227118fe5d",
+				"dweb:/ipfs/QmPdxSPG36qRCuJJLaVLxQ6edYxxcx5gnLZQRgGddhp4Dq"
 			]
 		}
 	},

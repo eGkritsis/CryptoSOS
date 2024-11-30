@@ -74,16 +74,17 @@ contract CryptoSOS {
     }
 
     function cancel() external {
-    require(!gameActive, "Game has already started");
-    require(msg.sender == player1, "Only the first player can cancel");
-    require(block.timestamp >= lastMoveTime + 2 minutes, "Cancellation period not yet reached");
+        require(!gameActive, "Game has already started");
+        require(msg.sender == player1, "Only the first player can cancel");
+        require(block.timestamp >= lastMoveTime + 2 minutes, "Cancellation period not yet reached");
 
-    // Refund the first player's payment
-    payable(player1).transfer(1 ether);
+        // Reset the game state first
+        // Mitigating Reentrancy Attacks
+        resetGame();
 
-    // Reset the game state
-    resetGame();
-}
+        // Refund the first player's payment
+        payable(player1).transfer(1 ether);
+    }
 
 
     function tooslow() external {
@@ -94,7 +95,7 @@ contract CryptoSOS {
             require(block.timestamp >= lastMoveTime + 5 minutes, "Game timeout not reached for owner");
 
             // Treat this as a tie
-            _endGame(address(0), 0 ether, 0 ether); // No winner; prizes handled in _endGame
+            _endGame(address(0), 0 ether); // No winner; prizes handled in _endGame
             emit Tie(player1, player2);
         } else {
             // Player's action: declare the opponent too slow after 1 minute of delay
@@ -103,7 +104,7 @@ contract CryptoSOS {
 
             // Determine the winner based on the current turn
             address winner = (turn == 1) ? player2 : player1;
-            _endGame(winner, 1.5 ether, 0.5 ether); // Distribute winnings
+            _endGame(winner, 1.5 ether); // Distribute winnings
             emit Winner(winner);
         }
     }
@@ -113,9 +114,8 @@ contract CryptoSOS {
         require(amountInWei > 0, "Amount must be greater than zero");
         require(address(this).balance >= amountInWei, "Insufficient contract balance");
 
-        // Attempt to send the requested amount to the owner
-        (bool success, ) = payable(owner).call{value: amountInWei}("");
-        require(success, "Transfer to owner failed");
+        // Attempt to send the requested amount to the owner using transfer (safe for EOAs)
+        payable(owner).transfer(amountInWei);
     }
 
 
@@ -133,10 +133,10 @@ contract CryptoSOS {
 
         if (_checkWin()) {
             emit Winner(msg.sender);
-            _endGame(msg.sender, prizeWinner, 0.2 ether);
+            _endGame(msg.sender, prizeWinner);
         } else if (!_hasEmptySquares()) {
             emit Tie(player1, player2);
-            _endGame(address(0), prizeTie, prizeTie); // Tie logic
+            _endGame(address(0), prizeTie); // Tie logic
         } else {
             lastMoveTime = block.timestamp;
             turn = turn == 1 ? 2 : 1; // Switch turn
@@ -170,18 +170,25 @@ contract CryptoSOS {
         return false; // No empty squares
     }
 
-
-    function _endGame(address winner, uint winnerPrize, uint /*contractShare*/) private {
+    function _endGame(address winner, uint winnerPrize) private {
+        // Cache state variables to reduce SLOAD gas costs
+        address currentPlayer1 = player1;
+        address currentPlayer2 = player2;
+        
+        // Update the state before external calls
+        // Checks-Effects-Interactions pattern
         gameActive = false;
 
+        // Reset the game state first
+        resetGame();
+
+        // Transfer funds only after state has been updated
         if (winner != address(0)) {
             payable(winner).transfer(winnerPrize);
         } else {
-            payable(player1).transfer(prizeTie);
-            payable(player2).transfer(prizeTie);
+            payable(currentPlayer1).transfer(prizeTie);
+            payable(currentPlayer2).transfer(prizeTie);
         }
-
-        resetGame();
     }
 
     function resetGame() private {
