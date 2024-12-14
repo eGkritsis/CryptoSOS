@@ -14,6 +14,12 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
 						"indexed": true,
 						"internalType": "address",
 						"name": "player",
@@ -39,6 +45,12 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
 						"indexed": true,
 						"internalType": "address",
 						"name": "player1",
@@ -57,6 +69,12 @@
 			{
 				"anonymous": false,
 				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
 					{
 						"indexed": true,
 						"internalType": "address",
@@ -77,6 +95,12 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
 						"indexed": true,
 						"internalType": "address",
 						"name": "player",
@@ -87,20 +111,13 @@
 				"type": "event"
 			},
 			{
-				"inputs": [],
-				"name": "board",
-				"outputs": [
+				"inputs": [
 					{
-						"internalType": "string",
-						"name": "",
-						"type": "string"
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
 					}
 				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
 				"name": "cancel",
 				"outputs": [],
 				"stateMutability": "nonpayable",
@@ -108,20 +125,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "gameActive",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "gameStartTime",
+				"name": "entryFee",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -133,7 +137,57 @@
 				"type": "function"
 			},
 			{
-				"inputs": [],
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "games",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "player1",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "player2",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "board",
+						"type": "string"
+					},
+					{
+						"internalType": "uint8",
+						"name": "turn",
+						"type": "uint8"
+					},
+					{
+						"internalType": "bool",
+						"name": "active",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "lastMoveTime",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					}
+				],
 				"name": "getGameState",
 				"outputs": [
 					{
@@ -154,7 +208,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "lastMoveTime",
+				"name": "nextGameId",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -181,6 +235,11 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
 						"internalType": "uint8",
 						"name": "square",
 						"type": "uint8"
@@ -194,6 +253,11 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
 						"internalType": "uint8",
 						"name": "square",
 						"type": "uint8"
@@ -205,13 +269,19 @@
 				"type": "function"
 			},
 			{
-				"inputs": [],
-				"name": "player1",
-				"outputs": [
+				"inputs": [
 					{
 						"internalType": "address",
 						"name": "",
 						"type": "address"
+					}
+				],
+				"name": "playerGame",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -219,12 +289,25 @@
 			},
 			{
 				"inputs": [],
-				"name": "player2",
+				"name": "prizeTie",
 				"outputs": [
 					{
-						"internalType": "address",
+						"internalType": "uint256",
 						"name": "",
-						"type": "address"
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "prizeWinner",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -234,33 +317,13 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "amountInWei",
+						"name": "gameId",
 						"type": "uint256"
 					}
 				],
-				"name": "sweepProfit",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [],
 				"name": "tooslow",
 				"outputs": [],
 				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "turn",
-				"outputs": [
-					{
-						"internalType": "uint8",
-						"name": "",
-						"type": "uint8"
-					}
-				],
-				"stateMutability": "view",
 				"type": "function"
 			}
 		],
@@ -277,7 +340,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"contracts/CryptoSOS.sol": "CryptoSOS"
+			"contracts/MultiSOS.sol": "MultiSOS"
 		},
 		"evmVersion": "cancun",
 		"libraries": {},
@@ -291,12 +354,12 @@
 		"remappings": []
 	},
 	"sources": {
-		"contracts/CryptoSOS.sol": {
-			"keccak256": "0x2888e4bdefcfa9472756302d8b1c70fe0b60fa46d4207a80118a76533f79c0e9",
+		"contracts/MultiSOS.sol": {
+			"keccak256": "0x241b52d152a8d9dd95e267d97bdd78966fd97153e24d70c8e40a15a8b6ac742a",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e4a74d19958d6fe58b657280e1b4eb9713026fa8450750cd05cfcced37221173",
-				"dweb:/ipfs/QmXUGbBQpopVvfMdLfywF4oHLEcjSVJs6km3WGE5rzK9Qs"
+				"bzz-raw://f6780f90b3b166cc00033da1cef34dce9a6db8d4291ddcd6a2518985a133a5c4",
+				"dweb:/ipfs/QmQBxFwahQ6zjzssLbh46Q59RHqsPKTVR86vgH9GuDHY4B"
 			]
 		}
 	},
