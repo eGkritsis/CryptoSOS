@@ -39,15 +39,6 @@ contract MultiSOS {
         _;
     }
 
-    modifier nonReentrant() {
-        require(!_entered, "Reentrancy detected");
-        _entered = true;
-        _;
-        _entered = false;
-    }
-
-    bool private _entered;
-
     constructor() {
         owner = msg.sender;
         activeGameCount = 0;
@@ -94,35 +85,46 @@ contract MultiSOS {
         _makeMove(square, "O");
     }
 
-    function tooslow() external nonReentrant {
-        uint gameId = playerGameId[msg.sender];
-        require(gameId != 0, "You are not in an active game");
+    function tooslow() external {
+        uint gameId;
+        // Special case: Owner can act on any active game
+        if (msg.sender == owner) {
+            // Find an active game where neither player has made a move in 5 minutes
+            for (uint i = 1; i <= gameCounter; i++) {
+                if (games[i].gameActive && block.timestamp >= games[i].lastMoveTime + 5 minutes) {
+                    gameId = i;
+                    break;
+                }
+            }
+            require(gameId != 0, "No eligible game found for owner to call tooSlow");
+        } else {
+            // Regular case: Players can act on their own active games
+            gameId = playerGameId[msg.sender];
+            require(gameId != 0, "You are not in an active game");
+        }
 
         Game storage game = games[gameId];
         require(game.gameActive, "Game is no longer active");
 
-        address waitingPlayer = (game.turn == 1) ? game.player2 : game.player1;
-        require(msg.sender == waitingPlayer, "It is not your turn to call tooSlow");
-
+        // Determine the action based on who is calling
         if (msg.sender == owner) {
-            // Owner can call tooslow if neither player has played for 5 minutes
-            require(block.timestamp >= game.lastMoveTime + 5 minutes, "Owner timeout not reached");
-
-            // End the game as a tie
+            // Owner ends the game as a tie
             _endGame(gameId, address(0), prizeTie);
             emit Tie(game.player1, game.player2);
         } else {
-            // Player can call tooSlow after 1 minute of inactivity
+            address waitingPlayer = (game.turn == 1) ? game.player2 : game.player1;
+            require(msg.sender == waitingPlayer, "It is not your turn to call tooSlow");
             require(block.timestamp >= game.lastMoveTime + 1 minutes, "Move timeout not reached");
 
             // Determine the winner based on whose turn it is (opponent wins)
             address winner = (game.turn == 1) ? game.player2 : game.player1;
 
-            // End the game, pay the winner 1.5 ether, and keep 0.5 ether for the contract
+            // End the game and reward the winner
             _endGame(gameId, winner, prizeWinner);
             emit Winner(winner);
         }
     }
+
 
     function getGameState() external view inActiveGame returns (
         address player1,
@@ -143,36 +145,49 @@ contract MultiSOS {
         );
     }
 
-    function sweepProfit(uint amountInWei) external nonReentrant onlyOwner {
+    function sweepProfit(uint amountInWei) external onlyOwner {
         require(amountInWei > 0, "Amount must be greater than zero");
 
+        // Calculate the minimum reserve based on active games
         uint minReserve = activeGameCount * 1.9 ether;
-        require(address(this).balance >= amountInWei + minReserve, "Insufficient balance for prizes");
+        uint availableBalance = address(this).balance;
 
+        // Ensure the contract retains enough balance for active game prizes
+        require(availableBalance >= minReserve + amountInWei, "Insufficient balance for prizes");
+
+        // Transfer the requested profit amount to the owner
         (bool success, ) = owner.call{value: amountInWei}("");
         require(success, "Transfer failed");
 
         emit ProfitSwept(amountInWei);
     }
 
-    function cancel() external nonReentrant {
+    function cancel() external {
         uint gameId = playerGameId[msg.sender];
         require(gameId != 0, "You are not in an active game");
 
         Game storage game = games[gameId];
         require(game.player2 == address(0), "Game has already started");
-        
-        // Ensure that the game has been active for less than 2 minutes
+
+        // Ensure the game has been active for less than 2 minutes
         require(block.timestamp < game.lastMoveTime + 2 minutes, "Cancel timeout exceeded");
 
-        // Reset the game state
-        resetGame(gameId);
+        // Mark game as inactive and reduce active game count
+        game.gameActive = false;
+        activeGameCount--;
+
+        // Reset the mapping for player1
+        playerGameId[game.player1] = 0;
+
+        // Clear the game state
+        game.player1 = address(0);
+        game.board = "---------";
+        game.lastMoveTime = 0;
 
         // Refund the player the entry fee
-        payable(msg.sender).transfer(entryFee);
+        (bool success, ) = msg.sender.call{value: entryFee}("");
+        require(success, "Refund failed");
     }
-
-
 
     function _makeMove(uint8 square, string memory symbol) private {
         uint gameId = playerGameId[msg.sender];
@@ -230,20 +245,21 @@ contract MultiSOS {
     function _endGame(uint gameId, address winner, uint prize) private {
         Game storage game = games[gameId];
 
-        // Reset game state
+        // Mark game as inactive and reduce active game count
         game.gameActive = false;
         activeGameCount--;
 
+        // Reset player-game mappings before making payments to avoid reentrancy
         playerGameId[game.player1] = 0;
         playerGameId[game.player2] = 0;
 
-        // Pay the winner if there is one, otherwise split the tie prize
+        // Handle payouts
         if (winner != address(0)) {
-            // Only pay the winner
+            // Pay the winner
             (bool success, ) = winner.call{value: prize}("");
             require(success, "Winner payout failed");
         } else {
-            // In case of a tie, pay both players if they exist
+            // Handle tie payouts
             if (game.player1 != address(0)) {
                 (bool success1, ) = game.player1.call{value: prizeTie}("");
                 require(success1, "Player1 tie payout failed");
@@ -255,23 +271,21 @@ contract MultiSOS {
             }
         }
 
-        // Reset game details after the game ends
+        // Reset the game details after payments
         resetGame(gameId);
     }
 
+
     function resetGame(uint gameId) private {
         Game storage game = games[gameId];
-        address player1 = game.player1;
 
+        // Clear all game details
         game.player1 = address(0);
         game.player2 = address(0);
         game.board = "---------";
         game.turn = 0;
         game.lastMoveTime = 0;
         game.gameActive = false;
-
-        if (player1 != address(0)) {
-            playerGameId[player1] = 0;
-        }
     }
+
 }
