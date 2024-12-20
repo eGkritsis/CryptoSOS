@@ -107,7 +107,7 @@ contract CryptoSOS {
             emit Winner(winner);
         }
     }
-
+    
     function sweepProfit(uint amountInWei) external onlyOwner {
         // Ensure the requested amount is valid
         require(amountInWei > 0, "Amount must be greater than zero");
