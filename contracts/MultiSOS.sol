@@ -14,8 +14,8 @@ contract MultiSOS {
     uint constant entryFee = 1 ether;
     uint constant prizeWinner = 1.8 ether;
     uint constant prizeTie = 0.95 ether;
-    uint public gameCounter;
-    uint public activeGameCount;
+    uint public gameCounter; // Total games played, cancelled games also count as games.
+    uint public activeGameCount; // Active Games
     address public owner;
 
     mapping(uint => Game) public games;
@@ -125,7 +125,6 @@ contract MultiSOS {
         }
     }
 
-
     function getGameState() external view inActiveGame returns (
         address player1,
         address player2,
@@ -156,9 +155,7 @@ contract MultiSOS {
         require(availableBalance >= minReserve + amountInWei, "Insufficient balance for prizes");
 
         // Transfer the requested profit amount to the owner
-        (bool success, ) = owner.call{value: amountInWei}("");
-        require(success, "Transfer failed");
-
+        payable(owner).transfer(amountInWei);
         emit ProfitSwept(amountInWei);
     }
 
@@ -185,8 +182,7 @@ contract MultiSOS {
         game.lastMoveTime = 0;
 
         // Refund the player the entry fee
-        (bool success, ) = msg.sender.call{value: entryFee}("");
-        require(success, "Refund failed");
+        payable(msg.sender).transfer(entryFee);
     }
 
     function _makeMove(uint8 square, string memory symbol) private {
@@ -256,18 +252,15 @@ contract MultiSOS {
         // Handle payouts
         if (winner != address(0)) {
             // Pay the winner
-            (bool success, ) = winner.call{value: prize}("");
-            require(success, "Winner payout failed");
+            payable(winner).transfer(prizeWinner); // Use transfer for safe payout
         } else {
             // Handle tie payouts
             if (game.player1 != address(0)) {
-                (bool success1, ) = game.player1.call{value: prizeTie}("");
-                require(success1, "Player1 tie payout failed");
+                payable(game.player1).transfer(prizeTie);
             }
 
             if (game.player2 != address(0)) {
-                (bool success2, ) = game.player2.call{value: prizeTie}("");
-                require(success2, "Player2 tie payout failed");
+                payable(game.player2).transfer(prizeTie);
             }
         }
 
@@ -275,9 +268,8 @@ contract MultiSOS {
         resetGame(gameId);
     }
 
-
     function resetGame(uint gameId) private {
-        Game storage game = games[gameId];
+        /*Game storage game = games[gameId];
 
         // Clear all game details
         game.player1 = address(0);
@@ -286,6 +278,7 @@ contract MultiSOS {
         game.turn = 0;
         game.lastMoveTime = 0;
         game.gameActive = false;
+        */
+        delete games[gameId];
     }
-
 }
