@@ -269,16 +269,6 @@ contract MultiSOS {
     }
 
     function resetGame(uint gameId) private {
-        /*Game storage game = games[gameId];
-
-        // Clear all game details
-        game.player1 = address(0);
-        game.player2 = address(0);
-        game.board = "---------";
-        game.turn = 0;
-        game.lastMoveTime = 0;
-        game.gameActive = false;
-        */
         delete games[gameId];
     }
 }
